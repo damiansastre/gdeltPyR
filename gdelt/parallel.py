@@ -59,7 +59,7 @@ def _mp_worker(url, table=None, proxies=None):
     # start = datetime.datetime.now()
     #################################
 
-    r = requests.get(url, proxies=proxies, timeout=5)
+    r = requests.get(url, proxies=proxies, timeout=5, save=False)
     # print("Request finished in {}".format(datetime.datetime.now() - start))
     if r.status_code == 404:
         message = "GDELT does not have a url for date time " \
@@ -94,6 +94,9 @@ def _mp_worker(url, table=None, proxies=None):
         # format(proc_name,proc,end))
         buffer.flush()
         buffer.close()
+        if save:
+            frame.to_csv(r.url.split('/')[-1])
+            return None
         return frame
 
     except:

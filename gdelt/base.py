@@ -198,6 +198,7 @@ class gdelt(object):
                queryTime=datetime.datetime.now().strftime('%m-%d-%Y %H:%M:%S'),
                normcols=False,
                stripped_files=None,
+               save=False
                ):
         """Core searcher method to set parameters for GDELT data searches
 
@@ -428,7 +429,7 @@ class gdelt(object):
         urlsv1events = partial(_urlBuilder, version=1, table='events')
         urlsv2gkg = partial(_urlBuilder, version=2, table='gkg', translation=self.translation)
 
-        eventWork = partial(_mp_worker, table='events', proxies=self.proxies)
+        eventWork = partial(_mp_worker, table='events', proxies=self.proxies, save=save)
         codeCams = partial(_cameos, codes=codes)
 
         #####################################
@@ -615,6 +616,7 @@ class gdelt(object):
         if stripped_files:
             print('We are stripping the date files')
             self.download_list = list(filter(lambda f: f.split('/')[-1].split('.')[0] in stripped_files, self.download_list))
+            
         print(len(self.download_list))
         if isinstance(self.datesString, str):
             if self.table == 'events':
