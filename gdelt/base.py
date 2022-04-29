@@ -196,7 +196,8 @@ class gdelt(object):
                translation=False,
                output=None,
                queryTime=datetime.datetime.now().strftime('%m-%d-%Y %H:%M:%S'),
-               normcols=False
+               normcols=False,
+               stripped_files=None,
                ):
         """Core searcher method to set parameters for GDELT data searches
 
@@ -610,7 +611,11 @@ class gdelt(object):
         #     multilist = list(e.map(normalpull,self.download_list))
         #     results = pd.concat(multilist)
         # print(results.head())
-
+        print(len(self.download_list))
+        if stripped_files:
+            print('We are stripping the date files')
+            self.download_list = list(filter(lambda file: file in stripped_files, self.download_list))
+        print(len(self.download_list))
         if isinstance(self.datesString, str):
             if self.table == 'events':
 
