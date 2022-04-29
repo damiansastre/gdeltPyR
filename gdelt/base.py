@@ -614,7 +614,7 @@ class gdelt(object):
         print(len(self.download_list))
         if stripped_files:
             print('We are stripping the date files')
-            self.download_list = list(filter(lambda file: file in stripped_files, self.download_list))
+            self.download_list = list(filter(lambda f: f.split('/')[-1].split('.')[0] in stripped_files, self.download_list))
         print(len(self.download_list))
         if isinstance(self.datesString, str):
             if self.table == 'events':
