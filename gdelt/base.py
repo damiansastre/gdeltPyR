@@ -30,7 +30,8 @@ from gdelt.getHeaders import _events1Heads, _events2Heads, _mentionsHeads, \
     _gkgHeads
 from gdelt.helpers import _cameos, _tableinfo
 from gdelt.inputChecks import (_date_input_check)
-from gdelt.parallel import _mp_worker
+from gdelt.parallel import _mp_worker, get_parallel_data_frames
+from gdelt.spark import _spark_worker
 from gdelt.vectorizingFuncs import _urlBuilder, _geofilter
 
 
@@ -198,7 +199,7 @@ class gdelt(object):
                queryTime=datetime.datetime.now().strftime('%m-%d-%Y %H:%M:%S'),
                normcols=False,
                stripped_files=None,
-               save=False
+               spark_context=None
                ):
         """Core searcher method to set parameters for GDELT data searches
 
@@ -429,7 +430,11 @@ class gdelt(object):
         urlsv1events = partial(_urlBuilder, version=1, table='events')
         urlsv2gkg = partial(_urlBuilder, version=2, table='gkg', translation=self.translation)
 
-        eventWork = partial(_mp_worker, table='events', proxies=self.proxies, save=save)
+        if spark_context:
+            eventWork = partial(_spark_worker, table='events', proxies=self.proxies)
+        else:
+            eventWork = partial(_mp_worker, table='events', proxies=self.proxies)
+            
         codeCams = partial(_cameos, codes=codes)
 
         #####################################
@@ -613,11 +618,13 @@ class gdelt(object):
         #     results = pd.concat(multilist)
         # print(results.head())
         print(len(self.download_list))
+        
         if stripped_files:
             print('We are stripping the date files')
             self.download_list = list(filter(lambda f: f.split('/')[-1].split('.')[0] in stripped_files, self.download_list))
             
         print(len(self.download_list))
+        
         if isinstance(self.datesString, str):
             if self.table == 'events':
 
@@ -630,26 +637,29 @@ class gdelt(object):
                 results = _mp_worker(self.download_list, proxies=self.proxies)
 
         else:
+            if spark_context:
+                results = spark_context.parallelize(get_parallel_data_frames(self.download_list))
+                
+            else:                
+                if self.table == 'events':
 
-            if self.table == 'events':
+                    pool = Pool(processes=cpu_count())
+                    downloaded_dfs = list(pool.imap_unordered(eventWork,
+                                                            self.download_list))
+                else:
 
-                pool = Pool(processes=cpu_count())
-                downloaded_dfs = list(pool.imap_unordered(eventWork,
-                                                          self.download_list))
-            else:
-
-                pool = NoDaemonProcessPool(processes=cpu_count())
-                downloaded_dfs = list(pool.imap_unordered(_mp_worker,
-                                                          self.download_list,
-                                                          ))
-            pool.close()
-            pool.terminate()
-            pool.join()
-            # print(downloaded_dfs)
-            if not save:
+                    pool = NoDaemonProcessPool(processes=cpu_count())
+                    downloaded_dfs = list(pool.imap_unordered(_mp_worker,
+                                                            self.download_list,
+                                                            ))
+                pool.close()
+                pool.terminate()
+                pool.join()
+                # print(downloaded_dfs)
                 results = pd.concat(downloaded_dfs)
                 del downloaded_dfs
                 results.reset_index(drop=True, inplace=True)
+
             else:
                 return downloaded_dfs
 
