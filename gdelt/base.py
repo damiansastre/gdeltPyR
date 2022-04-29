@@ -646,10 +646,12 @@ class gdelt(object):
             pool.terminate()
             pool.join()
             # print(downloaded_dfs)
-            results = pd.concat(downloaded_dfs)
-            del downloaded_dfs
-            results.reset_index(drop=True, inplace=True)
-
+            if not save:
+                results = pd.concat(downloaded_dfs)
+                del downloaded_dfs
+                results.reset_index(drop=True, inplace=True)
+            else:
+                return downloaded_dfs
 
         if self.table == 'gkg' and self.version == 1:
             results.columns = results.iloc[0].values.tolist()
