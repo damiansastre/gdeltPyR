@@ -639,7 +639,8 @@ class gdelt(object):
         else:
             if spark_context:
                 data_list = spark_context.parallelize(self.download_list)
-                results = data_list.map(lambda url: _spark_worker(url, table=table))                
+                results = data_list.map(lambda url: _spark_worker(url, table=table))      
+                return results          
             else:                
                 if self.table == 'events':
 
