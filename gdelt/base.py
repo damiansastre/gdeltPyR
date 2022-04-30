@@ -638,7 +638,7 @@ class gdelt(object):
 
         else:
             if spark_context:
-                data_list = spark_context.broadcast(self.download_list)
+                data_list = spark_context.parallelize(self.download_list)
                 results = spark_context.parallelize(get_parallel_data_frames(data_list))
                 
             else:                
