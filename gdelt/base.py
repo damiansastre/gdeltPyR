@@ -30,8 +30,8 @@ from gdelt.getHeaders import _events1Heads, _events2Heads, _mentionsHeads, \
     _gkgHeads
 from gdelt.helpers import _cameos, _tableinfo
 from gdelt.inputChecks import (_date_input_check)
-from gdelt.parallel import _mp_worker, get_parallel_data_frames
-from gdelt.spark import _spark_worker
+from gdelt.parallel import _mp_worker
+from gdelt.spark import _spark_worker, get_parallel_data_frames
 from gdelt.vectorizingFuncs import _urlBuilder, _geofilter
 
 
@@ -638,7 +638,8 @@ class gdelt(object):
 
         else:
             if spark_context:
-                results = spark_context.parallelize(get_parallel_data_frames(self.download_list))
+                data_list = spark_context.broadcast(self.download_list)
+                results = spark_context.parallelize(get_parallel_data_frames(data_list))
                 
             else:                
                 if self.table == 'events':
