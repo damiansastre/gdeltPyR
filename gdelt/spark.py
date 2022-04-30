@@ -32,10 +32,7 @@ import requests
 #     Process = NoDaemonProcess
 
 
-def get_parallel_data_frames(urls, table='gkg'):
-    
-    dataframes = urls.map(lambda url: _spark_worker(url, table=table))
-    return dataframes
+
     
     
 def _spark_worker(url, table=None, proxies=None):
