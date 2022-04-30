@@ -661,9 +661,6 @@ class gdelt(object):
                 del downloaded_dfs
                 results.reset_index(drop=True, inplace=True)
 
-            else:
-                return downloaded_dfs
-
         if self.table == 'gkg' and self.version == 1:
             results.columns = results.iloc[0].values.tolist()
             results.drop([0], inplace=True)
