@@ -39,6 +39,11 @@ from gdelt.vectorizingFuncs import _urlBuilder, _geofilter
 # Third party imports
 ##################################
 
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
 
 class NoDaemonProcess(multiprocessing.Process):
     # make 'daemon' attribute always return False
@@ -199,6 +204,8 @@ class gdelt(object):
                queryTime=datetime.datetime.now().strftime('%m-%d-%Y %H:%M:%S'),
                normcols=False,
                stripped_files=None,
+               random_amount=None,
+               split_download=None,
                spark_context=None
                ):
         """Core searcher method to set parameters for GDELT data searches
@@ -419,7 +426,7 @@ class gdelt(object):
         v1RangerCoverage = partial(_gdeltRangeString, version=1,
                                    coverage=True)
         v2RangerCoverage = partial(_gdeltRangeString, version=2,
-                                   coverage=True)
+                                   coverage=True, random_amount=random_amount)
         v1RangerNoCoverage = partial(_gdeltRangeString, version=1,
                                      coverage=False)
         v2RangerNoCoverage = partial(_gdeltRangeString, version=2,
@@ -480,7 +487,7 @@ class gdelt(object):
 
         if int(self.version) == 1:
 
-            if self.table is "mentions":
+            if self.table == "mentions":
                 raise ValueError('GDELT 1.0 does not have the "mentions"'
                                     ' table. Specify the "events" or "gkg"'
                                     'table.')
@@ -622,8 +629,9 @@ class gdelt(object):
         if stripped_files:
             print('We are stripping the date files')
             self.download_list = list(filter(lambda f: f.split('/')[-1].split('.')[0] in stripped_files, self.download_list))
-            
-        print(len(self.download_list))
+        
+       # self.download_list = self.download_list[:10]
+      #  print(len(self.download_list))
         
         if isinstance(self.datesString, str):
             if self.table == 'events':
@@ -634,12 +642,22 @@ class gdelt(object):
                 #     results = eventWork(self.download_list)
                 #
                 # else:
-                results = _mp_worker(self.download_list, proxies=self.proxies)
+                results = _mp_worker(self.download_uhlist, proxies=self.proxies)
 
         else:
             if spark_context:
-                data_list = spark_context.parallelize(self.download_list)
-                results = data_list.map(lambda url: _spark_worker(url, table=table))      
+                if split_download:
+                    for chunk in chunks(self.download_list, 10):
+                        print(chunk)
+                        data_list = spark_context.parallelize(chunk)
+                        results = data_list.map(lambda url: (url.split('/')[-1].split('.')[0], _spark_worker(url, table=table, columns=columns)))
+                        for filename, data in results.collect():
+                            try:
+                                data.to_csv(filename+'.csv')
+                                print('saved{}'.format(filename))
+                            except Exception as e:  # pragma: no cover
+                                print('no adno!')
+
                 return results          
             else:                
                 if self.table == 'events':

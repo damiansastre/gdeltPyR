@@ -10,6 +10,7 @@
 ##################################
 import datetime
 import warnings
+import random
 
 ##################################
 # Third party imports
@@ -125,7 +126,7 @@ def _dateRanger(originalArray):
             return np.array(dates)
 
 
-def _gdeltRangeString(element, coverage=None, version=2.0):
+def _gdeltRangeString(element, coverage=None, version=2.0, random_amount=None):
     """Takes a numpy datetime and converts to string"""
 
     ########################
@@ -268,7 +269,8 @@ def _gdeltRangeString(element, coverage=None, version=2.0):
                                               '%Y%m%d%H%M%S')[:4],
                                           parse(converted).strftime(
                                               '%Y%m%d%H%M%S')[:6])).tolist()
-
+    if random_amount:
+        converted = random.sample(list(converted), random_amount)
     return converted
 
 
