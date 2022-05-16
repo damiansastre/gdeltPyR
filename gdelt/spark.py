@@ -14,28 +14,7 @@ from io import BytesIO
 import pandas as pd
 import requests
 
-
-# class NoDaemonProcess(multiprocessing.Process):
-#     # make 'daemon' attribute always return False
-#     def _get_daemon(self):
-#         return False
-#
-#     def _set_daemon(self, value):
-#         pass
-#
-#     daemon = property(_get_daemon, _set_daemon)
-#
-#
-# # We sub-class multiprocessing.pool.Pool instead of multiprocessing.Pool
-# # because the latter is only a wrapper function, not a proper class.
-# class NoDaemonProcessPool(multiprocessing.pool.Pool):
-#     Process = NoDaemonProcess
-
-
-
-    
-    
-def _spark_worker(url, table=None, proxies=None):
+def _spark_worker(url, table=None, proxies=None, columns=None):
     """Code to download the urls and blow away the buffer to keep memory usage
      down"""
 
@@ -62,8 +41,9 @@ def _spark_worker(url, table=None, proxies=None):
             # parse_dates=[1, 2])
 
         elif table == 'gkg':
+          #  frame = spark.read_csv(buffer, compression='zip', sep='\t', header=None)
             frame = pd.read_csv(buffer, compression='zip', sep='\t',
-                                header=None, warn_bad_lines=False)
+                                header=None)
             # parse_dates=['DATE'], warn_bad_lines=False)
 
         else:  # pragma: no cover
@@ -72,6 +52,8 @@ def _spark_worker(url, table=None, proxies=None):
 
         buffer.flush()
         buffer.close()
+        if columns:
+            frame.columns = columns
         return frame
 
     except:
