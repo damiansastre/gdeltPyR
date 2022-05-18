@@ -657,7 +657,7 @@ class gdelt(object):
                                 print('File already exists')
                                 continue
                             if data is not None:
-                                data = data.filter(data.Organizations.contains(organization_filter))['DocumentIdentifier']
+                                data = data[data['Organizations'].str.contains(organization_filter)]['DocumentIdentifier']
                                 data.to_csv("{}.csv".format(filename))
                                 print('saved-{}'.format(filename))
                 return results          
