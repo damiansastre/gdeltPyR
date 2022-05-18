@@ -206,7 +206,8 @@ class gdelt(object):
                stripped_files=None,
                random_amount=None,
                split_download=None,
-               spark_context=None
+               spark_context=None,
+               organization_filter=None
                ):
         """Core searcher method to set parameters for GDELT data searches
 
@@ -647,17 +648,18 @@ class gdelt(object):
         else:
             if spark_context:
                 if split_download:
-                    for chunk in chunks(self.download_list, 10):
+                    for chunk in chunks(self.download_list, 5):
                         print(chunk)
                         data_list = spark_context.parallelize(chunk)
-                        results = data_list.map(lambda url: (url.split('/')[-1].split('.')[0], _spark_worker(url, table=table, columns=columns)))
+                        results = data_list.map(lambda url: (url.split('/')[-1].split('.')[0], _spark_worker(url, table=table, columns=columns)) if not os.path.exists(url.split('/')[-1].split('.')[0]+".csv") else ("", ""))
                         for filename, data in results.collect():
-                            try:
-                                data.to_csv(filename+'.csv')
-                                print('saved{}'.format(filename))
-                            except Exception as e:  # pragma: no cover
-                                print('no adno!')
-
+                            if not filename:
+                                print('File already exists')
+                                continue
+                            if data is not None:
+                                data = data.filter(data.Organizations.contains(organization_filter))['DocumentIdentifier']
+                                data.to_csv("{}.csv".format(filename))
+                                print('saved-{}'.format(filename))
                 return results          
             else:                
                 if self.table == 'events':
