@@ -626,9 +626,9 @@ class gdelt(object):
         #     results = pd.concat(multilist)
         # print(results.head())
         print(len(self.download_list))
-        
         if stripped_files:
             print('We are stripping the date files')
+            
             self.download_list = list(filter(lambda f: f.split('/')[-1].split('.')[0] in stripped_files, self.download_list))
         
        # self.download_list = self.download_list[:10]
@@ -653,14 +653,14 @@ class gdelt(object):
                         data_list = spark_context.parallelize(chunk)
                         results = data_list.map(lambda url: (url.split('/')[-1].split('.')[0], _spark_worker(url, table=table, columns=columns)) if not os.path.exists(url.split('/')[-1].split('.')[0]+".csv") else ("", ""))
                         for filename, data in results.collect():
-                            if not filename:
-                                print('File already exists')
-                                continue
-                            if data is not None:
-                                data = data[data['Organizations'].str.contains(organization_filter)]['DocumentIdentifier']
-                                data.to_csv("{}.csv".format(filename))
-                                print('saved-{}'.format(filename))
-                return results          
+                            if type(data) == pd.core.frame.DataFrame: # workaround for Dataframes.
+                                try:
+                                    data = data[data['Organizations'].str.contains(organization_filter, na=False)]['DocumentIdentifier']
+                                    data.to_csv("{}/{}.csv".format(filename[:4], filename))
+                                    print('saved-{}'.format(filename))
+                                except Exception as e:  # pragma: no cover
+                                    print(e)
+                return        
             else:                
                 if self.table == 'events':
 
